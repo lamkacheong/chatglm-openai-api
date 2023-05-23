@@ -214,7 +214,7 @@ async def embeddings(body: EmbeddingsBody, request: Request, background_tasks: B
 
 def do_embeddings(body: EmbeddingsBody, request: Request, background_tasks: BackgroundTasks):
     background_tasks.add_task(torch_gc)
-    if request.headers.get("Authorization").split(" ")[1] not in context.tokens:
+    if (request.headers.get("Authorization") or ' ').split(" ")[1] not in context.tokens:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token is wrong!")
 
     if not context.embeddings_model:
