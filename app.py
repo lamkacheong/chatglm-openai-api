@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+
 
 from context import context
 from utils import torch_gc
@@ -51,6 +54,13 @@ class EmbeddingsBody(BaseModel):
     input: Any
     model: Optional[str]
 
+
+@app.exception_handler(500)
+async def custom_exception_handler(request: Request, exc: Exception):
+    # 执行你的 torch_gc
+    torch_gc()
+    # 继续执行 FastAPI 默认的 500 错误处理
+    return await request_validation_exception_handler(request, exc)
 
 @app.get("/")
 def read_root():
