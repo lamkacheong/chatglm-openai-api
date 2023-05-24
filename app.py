@@ -8,17 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-import time
 
 from context import context
 from utils import torch_gc
 
 app = FastAPI()
-scheduler = BackgroundScheduler()
-scheduler.add_job(torch_gc, IntervalTrigger(seconds=60))
-scheduler.start()
 
 app.add_middleware(
     CORSMiddleware,
