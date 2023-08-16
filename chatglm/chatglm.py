@@ -8,7 +8,7 @@ from typing import Dict, Union, Optional
 from torch.nn import Module
 from transformers import AutoModel, AutoTokenizer
 
-from .chat import do_chat, do_chat_stream
+from .chat import do_chat, do_chat_stream, do_batch_chat
 
 def init_chatglm(model_path: str, running_device: str, gpus: int):
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
@@ -22,6 +22,7 @@ def init_chatglm(model_path: str, running_device: str, gpus: int):
     model.eval()
     model.do_chat = do_chat
     model.do_chat_stream = do_chat_stream
+    model.do_batch_chat = do_batch_chat
     return tokenizer, model
 
 
