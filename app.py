@@ -365,4 +365,4 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
         "top_p": body.top_p,
         "max_length": body.max_length,
     })
-    return JSONResponse(status_code=200, response=response)
+    return JSONResponse(status_code=200, content=response)
