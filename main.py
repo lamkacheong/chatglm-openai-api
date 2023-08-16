@@ -17,17 +17,17 @@ def main():
     parser.add_argument('--config', type=str, help='Path to the config file',
                         default='config.toml')
     parser.add_argument('--llm_model', type=str, help='Choosed LLM model',
-                        default='chatglm-6b-int4')
+                        default='chatglm-6b')
     parser.add_argument('--embeddings_model', type=str,
                         help='Choosed embeddings model, can be empty',
-                        default='')
+                        default='text2vec-large-chinese')
     parser.add_argument('--device', type=str,
                         help='Device to run the service, gpu/cpu/mps',
                         default='gpu')
     parser.add_argument('--gpus', type=int, help='Use how many gpus, default 1',
                         default=1)
     parser.add_argument('--port', type=int, help='Port number to run the service',
-                        default=8080)
+                        default=6006)
     parser.add_argument('--tunnel', type=str, help='Remote tunnel for public visit, default not set',
                         default="")
 
