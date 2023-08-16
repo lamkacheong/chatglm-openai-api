@@ -360,7 +360,7 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
     if not context.model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "model not found!")
 
-    response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
+    response = context.model.chat_batch_no_history(context.model, context.tokenizer, body.prompts, {
         "temperature": body.temperature,
         "top_p": body.top_p,
         "max_length": body.max_length,
