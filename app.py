@@ -51,6 +51,15 @@ class EmbeddingsBody(BaseModel):
     input: Any
     model: Optional[str]
 
+class BatchChatBody(BaseModel):
+    # Python 3.8 does not support str | List[str]
+    prompts: List[str]
+    max_length: Optional[int]
+    temperature: Optional[float]
+    top_p: Optional[float]
+
+
+
 
 @app.get("/")
 def read_root():
@@ -336,3 +345,24 @@ async def completions(body: CompletionBody, request: Request, background_tasks: 
             "max_tokens": body.max_tokens,
         })
         return JSONResponse(content=generate_response(response, chat=False))
+
+
+@app.post("/v1/batch_chat")
+async def batch_chat(body: BatchChatBody, request: Request, background_tasks: BackgroundTasks):
+    return do_batch_chat(body, request, background_tasks)
+
+
+def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: BackgroundTasks):
+    background_tasks.add_task(torch_gc)
+    if (request.headers.get("Authorization") or ' ').split(" ")[1] not in context.tokens:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token is wrong!")
+
+    if not context.model:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "model not found!")
+
+    response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
+        "temperature": body.temperature,
+        "top_p": body.top_p,
+        "max_length": body.max_length,
+    })
+    return JSONResponse(status_code=200, response=response)
