@@ -54,7 +54,7 @@ class EmbeddingsBody(BaseModel):
 class BatchChatBody(BaseModel):
     # Python 3.8 does not support str | List[str]
     prompts: List[str]
-    max_length: Optional[int]
+    max_tokens: Optional[int]
     temperature: Optional[float]
     top_p: Optional[float]
 
@@ -366,6 +366,6 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
     response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
         "temperature": body.temperature,
         "top_p": body.top_p,
-        "max_length": body.max_length,
+        "max_tokens": body.max_tokens,
     })
     return JSONResponse(status_code=200, content={"result": response})
