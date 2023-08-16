@@ -360,9 +360,12 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
     if not context.model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "model not found!")
 
+    if len(body.prompts) > 15:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于15")
+
     response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
         "temperature": body.temperature,
         "top_p": body.top_p,
         "max_length": body.max_length,
     })
-    return JSONResponse(status_code=200, content=response)
+    return JSONResponse(status_code=200, content={"result": response})
