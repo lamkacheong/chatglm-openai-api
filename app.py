@@ -58,6 +58,14 @@ class BatchChatBody(BaseModel):
     temperature: Optional[float]
     top_p: Optional[float]
 
+class BatchChatNBody(BaseModel):
+    # Python 3.8 does not support str | List[str]
+    prompt: str
+    max_tokens: Optional[int]
+    temperature: Optional[float]
+    top_p: Optional[float]
+    n: int
+
 
 
 
@@ -351,6 +359,9 @@ async def completions(body: CompletionBody, request: Request, background_tasks: 
 async def batch_chat(body: BatchChatBody, request: Request, background_tasks: BackgroundTasks):
     return do_batch_chat(body, request, background_tasks)
 
+@app.post("/v1/batch_chat_n")
+async def batch_chat_n(body: BatchChatNBody, request: Request, background_tasks: BackgroundTasks):
+    return do_batch_chat_n(body, request, background_tasks)
 
 def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: BackgroundTasks):
     background_tasks.add_task(torch_gc)
@@ -360,10 +371,28 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
     if not context.model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "model not found!")
 
-    if len(body.prompts) > 15:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于15")
+    if len(body.prompts) > 20:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于20")
 
     response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
+        "temperature": body.temperature,
+        "top_p": body.top_p,
+        "max_tokens": body.max_tokens,
+    })
+    return JSONResponse(status_code=200, content={"result": response})
+
+def do_batch_chat_n(body: BatchChatNBody, request: Request, background_tasks: BackgroundTasks):
+    background_tasks.add_task(torch_gc)
+    if (request.headers.get("Authorization") or ' ').split(" ")[1] not in context.tokens:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token is wrong!")
+
+    if not context.model:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "model not found!")
+
+    if body.n > 20:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于20")
+
+    response = context.model.do_batch_chat(context.model, context.tokenizer, [body.prompt] * body.n, {
         "temperature": body.temperature,
         "top_p": body.top_p,
         "max_tokens": body.max_tokens,
