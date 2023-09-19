@@ -46,7 +46,7 @@ def do_batch_chat(model, tokenizer, prompts, model_args = None):
     model_args = init_model_args(model_args)
     response = model.chat_batch_no_history(tokenizer,
                                            prompts,
-                                           max_length=max(4000, model_args['max_tokens']),
+                                           max_length=max(20000, model_args['max_tokens']),
                                            top_p=model_args['top_p'],
                                            temperature=model_args['temperature']
                                            )
