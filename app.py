@@ -24,9 +24,10 @@ app.add_middleware(
 
 
 class Message(BaseModel):
-    role: str
-    content: str
-
+    role: Literal["user", "assistant", "system", "observation"]
+    content: str = None
+    metadata: Optional[str] = None
+    tools: Optional[List[dict]] = None
 
 class ChatBody(BaseModel):
     messages: List[Message]
@@ -277,22 +278,24 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
 
     if not context.model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "LLM model not found!")
-    question = body.messages[-1]
-    if question.role == 'user':
-        question = question.content
-    else:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No Question Found")
 
-    history = []
-    user_question = ''
-    for message in body.messages:
-        if message.role == 'system':
-            history.append((message.content, "OK"))
-        if message.role == 'user':
-            user_question = message.content
-        elif message.role == 'assistant':
-            assistant_answer = message.content
-            history.append((user_question, assistant_answer))
+    if request.messages[-1].role == "assistant":
+        raise HTTPException(status_code=400, detail="Invalid request")
+
+    # history = []
+    # user_question = ''
+    # for message in body.messages:
+    #     if message.role == 'system':
+    #         history.append((message.content, "OK"))
+    #     if message.role == 'user':
+    #         user_question = message.content
+    #     elif message.role == 'assistant':
+    #         assistant_answer = message.content
+    #         history.append((user_question, assistant_answer))
+
+    messages = body.messages
+    question, role = messages[-1].content, messages[-1].role
+    history = [m.dict(exclude_none=True) for m in messages[:-1]]
 
     print(f"question = {question}, history = {history}")
 
@@ -304,6 +307,7 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
                     "temperature": body.temperature,
                     "top_p": body.top_p,
                     "max_tokens": body.max_tokens,
+                    "role": role,
                 }):
                 if first:
                     first = False
@@ -318,6 +322,7 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
             "temperature": body.temperature,
             "top_p": body.top_p,
             "max_tokens": body.max_tokens,
+            "role": role,
         })
         return JSONResponse(content=generate_response(response))
 
