@@ -299,17 +299,16 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
     question, role = messages[-1].content, messages[-1].role
     history = [m.dict(exclude_none=True) for m in messages[:-1]]
 
-    print(f"question = {question}, history = {history}")
+    print(f"question = {question}, history = {history}, role = {role}")
 
     if body.stream:
         async def eval_llm():
             first = True
             for response in context.model.do_chat_stream(
-                context.model, context.tokenizer, question, history, {
+                context.model, context.tokenizer, question, history, role, {
                     "temperature": body.temperature,
                     "top_p": body.top_p,
-                    "max_tokens": body.max_tokens,
-                    "role": role,
+                    "max_tokens": body.max_tokens
                 }):
                 if first:
                     first = False
@@ -320,11 +319,10 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
             yield "[DONE]"
         return EventSourceResponse(eval_llm(), ping=10000)
     else:
-        response = context.model.do_chat(context.model, context.tokenizer, question, history, {
+        response = context.model.do_chat(context.model, context.tokenizer, question, history, role, {
             "temperature": body.temperature,
             "top_p": body.top_p,
-            "max_tokens": body.max_tokens,
-            "role": role,
+            "max_tokens": body.max_tokens
         })
         return JSONResponse(content=generate_response(response))
 
