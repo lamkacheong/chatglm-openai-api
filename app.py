@@ -11,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from context import context
 from utils import torch_gc
+from typing import Literal
 
 app = FastAPI()
 
