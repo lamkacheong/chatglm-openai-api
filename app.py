@@ -280,7 +280,9 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
     if not context.model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "LLM model not found!")
 
-    if request.messages[-1].role == "assistant":
+    messages = body.messages
+
+    if messages[-1].role == "assistant":
         raise HTTPException(status_code=400, detail="Invalid request")
 
     # history = []
@@ -294,7 +296,6 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
     #         assistant_answer = message.content
     #         history.append((user_question, assistant_answer))
 
-    messages = body.messages
     question, role = messages[-1].content, messages[-1].role
     history = [m.dict(exclude_none=True) for m in messages[:-1]]
 
