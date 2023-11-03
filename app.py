@@ -379,6 +379,10 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
     if len(body.prompts) > 20:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于20")
 
+    print("批量处理开始:\n")
+    print(body.prompt)
+    print("批量处理结束:\n")
+    
     response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
         "temperature": body.temperature,
         "top_p": body.top_p,
@@ -396,6 +400,10 @@ def do_batch_chat_n(body: BatchChatNBody, request: Request, background_tasks: Ba
 
     if body.n > 20:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于20")
+
+    print("批量处理开始:\n")
+    print(body.prompt)
+    print("批量处理结束:\n")
 
     response = context.model.do_batch_chat(context.model, context.tokenizer, [body.prompt] * body.n, {
         "temperature": body.temperature,
