@@ -342,7 +342,7 @@ async def completions(body: CompletionBody, request: Request, background_tasks: 
     if body.stream:
         async def eval_llm():
             for response in context.model.do_chat_stream(
-                    context.model, context.tokenizer, question, [], {
+                    context.model, context.tokenizer, question, [], "user", {
                         "temperature": body.temperature,
                         "top_p": body.top_p,
                         "max_tokens": body.max_tokens,
@@ -352,7 +352,7 @@ async def completions(body: CompletionBody, request: Request, background_tasks: 
             yield "[DONE]"
         return EventSourceResponse(eval_llm(), ping=10000)
     else:
-        response = context.model.do_chat(context.model, context.tokenizer, question, [], {
+        response = context.model.do_chat(context.model, context.tokenizer, question, [], "user", {
             "temperature": body.temperature,
             "top_p": body.top_p,
             "max_tokens": body.max_tokens,
