@@ -11,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from context import context
 from utils import torch_gc
+from typing import Literal
 
 app = FastAPI()
 
@@ -24,9 +25,10 @@ app.add_middleware(
 
 
 class Message(BaseModel):
-    role: str
-    content: str
-
+    role: Literal["user", "assistant", "system", "observation"]
+    content: str = None
+    metadata: Optional[str] = None
+    tools: Optional[List[dict]] = None
 
 class ChatBody(BaseModel):
     messages: List[Message]
@@ -277,33 +279,36 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
 
     if not context.model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "LLM model not found!")
-    question = body.messages[-1]
-    if question.role == 'user':
-        question = question.content
-    else:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No Question Found")
 
-    history = []
-    user_question = ''
-    for message in body.messages:
-        if message.role == 'system':
-            history.append((message.content, "OK"))
-        if message.role == 'user':
-            user_question = message.content
-        elif message.role == 'assistant':
-            assistant_answer = message.content
-            history.append((user_question, assistant_answer))
+    messages = body.messages
 
-    print(f"question = {question}, history = {history}")
+    if messages[-1].role == "assistant":
+        raise HTTPException(status_code=400, detail="Invalid request")
+
+    # history = []
+    # user_question = ''
+    # for message in body.messages:
+    #     if message.role == 'system':
+    #         history.append((message.content, "OK"))
+    #     if message.role == 'user':
+    #         user_question = message.content
+    #     elif message.role == 'assistant':
+    #         assistant_answer = message.content
+    #         history.append((user_question, assistant_answer))
+
+    question, role = messages[-1].content, messages[-1].role
+    history = [m.dict(exclude_none=True) for m in messages[:-1]]
+
+    print(f"question = {question}, history = {history}, role = {role}")
 
     if body.stream:
         async def eval_llm():
             first = True
             for response in context.model.do_chat_stream(
-                context.model, context.tokenizer, question, history, {
+                context.model, context.tokenizer, question, history, role, {
                     "temperature": body.temperature,
                     "top_p": body.top_p,
-                    "max_tokens": body.max_tokens,
+                    "max_tokens": body.max_tokens
                 }):
                 if first:
                     first = False
@@ -314,10 +319,10 @@ async def chat_completions(body: ChatBody, request: Request, background_tasks: B
             yield "[DONE]"
         return EventSourceResponse(eval_llm(), ping=10000)
     else:
-        response = context.model.do_chat(context.model, context.tokenizer, question, history, {
+        response = context.model.do_chat(context.model, context.tokenizer, question, history, role, {
             "temperature": body.temperature,
             "top_p": body.top_p,
-            "max_tokens": body.max_tokens,
+            "max_tokens": body.max_tokens
         })
         return JSONResponse(content=generate_response(response))
 
@@ -337,7 +342,7 @@ async def completions(body: CompletionBody, request: Request, background_tasks: 
     if body.stream:
         async def eval_llm():
             for response in context.model.do_chat_stream(
-                    context.model, context.tokenizer, question, [], {
+                    context.model, context.tokenizer, question, [], "user", {
                         "temperature": body.temperature,
                         "top_p": body.top_p,
                         "max_tokens": body.max_tokens,
@@ -347,7 +352,7 @@ async def completions(body: CompletionBody, request: Request, background_tasks: 
             yield "[DONE]"
         return EventSourceResponse(eval_llm(), ping=10000)
     else:
-        response = context.model.do_chat(context.model, context.tokenizer, question, [], {
+        response = context.model.do_chat(context.model, context.tokenizer, question, [], "user", {
             "temperature": body.temperature,
             "top_p": body.top_p,
             "max_tokens": body.max_tokens,
@@ -374,6 +379,10 @@ def do_batch_chat(body: BatchChatBody, request: Request, background_tasks: Backg
     if len(body.prompts) > 20:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于20")
 
+    print("批量处理开始:\n")
+    print(body.prompt)
+    print("批量处理结束:\n")
+    
     response = context.model.do_batch_chat(context.model, context.tokenizer, body.prompts, {
         "temperature": body.temperature,
         "top_p": body.top_p,
@@ -392,9 +401,10 @@ def do_batch_chat_n(body: BatchChatNBody, request: Request, background_tasks: Ba
     if body.n > 20:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "批量处理不能多于20")
 
-    print("debug:")
-    print("body:")
-    print(body)
+    print("批量处理开始:\n")
+    print(body.prompt)
+    print("批量处理结束:\n")
+
     response = context.model.do_batch_chat(context.model, context.tokenizer, [body.prompt] * body.n, {
         "temperature": body.temperature,
         "top_p": body.top_p,

@@ -15,11 +15,11 @@ def init_model_args(model_args = None):
 
     return model_args
 
-def do_chat_stream(model, tokenizer, question, history, model_args = None):
+def do_chat_stream(model, tokenizer, question, history, role, model_args = None):
     model_args = init_model_args(model_args)
     sends = 0
     for response, _ in model.stream_chat(
-            tokenizer, question, history,
+            tokenizer, question, history, role,
             temperature=model_args['temperature'],
             top_p=model_args['top_p'],
             max_length=max(2048, model_args['max_tokens'])):
@@ -33,10 +33,10 @@ def do_chat_stream(model, tokenizer, question, history, model_args = None):
         yield ret
 
 
-def do_chat(model, tokenizer, question, history, model_args = None):
+def do_chat(model, tokenizer, question, history, role, model_args = None):
     model_args = init_model_args(model_args)
     response, _ = model.chat(
-            tokenizer, question, history,
+            tokenizer, question, history, role,
             temperature=model_args['temperature'],
             top_p=model_args['top_p'],
             max_length=max(2048, model_args['max_tokens']))
